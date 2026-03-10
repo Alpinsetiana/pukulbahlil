@@ -1,0 +1,165 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Pukul Bahlil - Edisi mukbang ethanol</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #1a1a1a;
+            color: white;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+            cursor: crosshair;
+        }
+        canvas {
+            border: 5px solid #444;
+            background: linear-gradient(to bottom, #2c3e50, #000);
+            box-shadow: 0 0 50px rgba(255, 0, 0, 0.2);
+            margin-top: 20px;
+        }
+        .stats {
+            font-size: 24px;
+            margin-top: 10px;
+            text-shadow: 2px 2px #ff0000;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="stats">Skor: <span id="score">0</span> | Waktu: <span id="timer">30</span>s</div>
+    <canvas id="gameCanvas" width="800" height="500"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        const timerElement = document.getElementById('timer');
+
+        let score = 0;
+        let timeLeft = 30;
+        let gameActive = true;
+
+        // Load Images
+        const targetImg = new Image();
+        targetImg.src = 'bahlil.jpg'; // Pastikan nama file sesuai
+
+        // Objek Game
+        let target = {
+            x: Math.random() * 700 + 50,
+            y: Math.random() * 300 + 100,
+            width: 100,
+            height: 120,
+            visible: true
+        };
+
+        let bloodSplats = [];
+
+        // Hiasan Samping (Bensin & Sawit)
+        function drawDecorations() {
+            ctx.font = "50px Arial";
+            // Kiri: Bensin
+            ctx.fillText("⛽", 20, 100);
+            ctx.fillText("⛽", 20, 250);
+            ctx.fillText("⛽", 20, 400);
+            // Kanan: Sawit
+            ctx.fillText("🌴", 730, 100);
+            ctx.fillText("🌴", 730, 250);
+            ctx.fillText("🌴", 730, 400);
+        }
+
+        function drawBlood(x, y) {
+            for (let i = 0; i < 15; i++) {
+                bloodSplats.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 10,
+                    vy: (Math.random() - 0.5) * 10,
+                    radius: Math.random() * 8,
+                    life: 30 // Durasi efek darah
+                });
+            }
+        }
+
+        function update() {
+            if (!gameActive) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            drawDecorations();
+
+            // Gambar Efek Darah Sadis
+            bloodSplats.forEach((splat, index) => {
+                ctx.beginPath();
+                ctx.arc(splat.x, splat.y, splat.radius, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(200, 0, 0, ${splat.life / 30})`;
+                ctx.fill();
+                splat.x += splat.vx;
+                splat.y += splat.vy;
+                splat.life--;
+                if (splat.life <= 0) bloodSplats.splice(index, 1);
+            });
+
+            // Gambar Target
+            if (target.visible) {
+                ctx.drawImage(targetImg, target.x, target.y, target.width, target.height);
+            }
+        }
+
+        // Pindah target secara acak
+        setInterval(() => {
+            if (gameActive) {
+                target.x = Math.random() * (canvas.width - 200) + 100;
+                target.y = Math.random() * (canvas.height - 200) + 100;
+            }
+        }, 800);
+
+        // Event Klik (Pukul)
+        canvas.addEventListener('mousedown', (e) => {
+            if (!gameActive) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            if (mouseX > target.x && mouseX < target.x + target.width &&
+                mouseY > target.y && mouseY < target.y + target.height) {
+                
+                score += 10;
+                scoreElement.innerText = score;
+                
+                // Efek Darah di posisi klik
+                drawBlood(mouseX, mouseY);
+                
+                // Pindahkan target segera setelah dipukul
+                target.x = -200; 
+            }
+        });
+
+        // Timer Game
+        const countdown = setInterval(() => {
+            timeLeft--;
+            timerElement.innerText = timeLeft;
+            if (timeLeft <= 0) {
+                gameActive = false;
+                clearInterval(countdown);
+                alert("Waktu Habis! Skor Akhir Anda: " + score);
+                location.reload();
+            }
+        }, 1000);
+
+        function gameLoop() {
+            update();
+            requestAnimationFrame(gameLoop);
+        }
+
+        targetImg.onload = gameLoop;
+    </script>
+</body>
+</html>
